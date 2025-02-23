@@ -1,5 +1,7 @@
 from kafka import KafkaProducer, KafkaAdminClient
 from kafka.errors import TopicAlreadyExistsError, KafkaError
+from kafka.admin import NewTopic
+from src.api_sptrans import APISPTRANS
 import json
 from time import sleep
 
@@ -25,3 +27,14 @@ class Produtor:
                 sleep(5)
         else:
             raise RuntimeError('Falha ao conectar ao kafka')
+
+    def criar_topico(self, topico: str, numero_particoes: int):
+        try:
+            novo_topico = NewTopic(
+                name=topico,
+                num_partitions=numero_particoes,
+                replication_factor=1
+            )
+            self.__admin_cliente.create_topics([novo_topico])
+        except TopicAlreadyExistsError:
+            print('Tópico já criado')
