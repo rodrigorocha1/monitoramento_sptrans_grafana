@@ -1,7 +1,7 @@
 import requests
 import os
 from dotenv import load_dotenv
-from typing import Dict, Optional
+from typing import List, Optional
 
 load_dotenv()
 
@@ -23,7 +23,7 @@ class APISPTRANS:
         cookie = cookies.get('apiCredentials', '')
         return cookie
 
-    def buscar_linhas(self) -> Dict:
+    def buscar_linhas(self) -> List:
         """busca todas as linhas
 
         Returns:
@@ -36,4 +36,4 @@ class APISPTRANS:
         }
 
         req = requests.get(url=URL_COMPLETA, headers=headers)
-        return req.json()
+        return req.json()['l']
