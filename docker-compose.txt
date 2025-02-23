@@ -1,0 +1,173 @@
+
+
+services:
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    networks:
+      monitoramento_sptrans_rede:
+        ipv4_address: 172.20.0.2
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - TZ=America/Sao_Paulo
+      - GF_INSTALL_PLUGINS=dalvany-image-panel
+    volumes:
+      - ./grafana_data:/var/lib/grafana
+
+  mssql_grafana:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: mssql_server_pratica
+    ports:
+      - "1433:1433"
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "YourStrongP@ssw0rd!"
+      MSSQL_TCP_CERT: "TrustServerCertificate"
+      TZ: "America/Sao_Paulo"
+    volumes:
+      - ./dados_sql_server:/var/opt/mssql
+    restart: always
+    networks:
+      monitoramento_sptrans_rede:
+        ipv4_address: 172.20.0.3
+
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: always
+    networks:
+      monitoramento_sptrans_rede:
+        ipv4_address: 172.20.0.4
+
+  airflow-webserver:
+    image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.10.4}
+    container_name: airflow-webserver
+    command: webserver
+    ports:
+      - "8080:8080"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__FERNET_KEY: ''
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+      AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: 5
+      AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL: 20
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: 'true'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+      AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+      AIRFLOW__LOGGING__LOGGING_LEVEL: "INFO"
+      _PIP_ADDITIONAL_REQUIREMENTS: "apache-airflow-providers-microsoft-mssql==3.6.0"
+    volumes:
+      - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
+      - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
+      - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
+      - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
+    user: "${AIRFLOW_UID:-50000}:0"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      monitoramento_sptrans_rede:
+        ipv4_address: 172.20.0.5
+
+  airflow-scheduler:
+    image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.10.4}
+    container_name: airflow-scheduler
+    command: scheduler
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      monitoramento_sptrans_rede:
+        ipv4_address: 172.20.0.6
+
+  airflow-init:
+    image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.10.4}
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        mkdir -p /sources/logs /sources/dags /sources/plugins
+        chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
+        exec /entrypoint airflow version
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__FERNET_KEY: ''
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+      AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: 5
+      AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL: 20
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: 'true'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+      AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+      AIRFLOW__LOGGING__LOGGING_LEVEL: "INFO"
+      _PIP_ADDITIONAL_REQUIREMENTS: "apache-airflow-providers-microsoft-mssql==3.6.0"
+    user: "0:0"
+    volumes:
+      - ${AIRFLOW_PROJ_DIR:-.}:/sources
+    networks:
+      monitoramento_sptrans_rede:
+        ipv4_address: 172.20.0.7
+
+  airflow-cli:
+    image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.10.4}
+    container_name: airflow-cli
+    profiles:
+      - debug
+    command:
+      - bash
+      - -c
+      - airflow
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__FERNET_KEY: ''
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+      AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: 5
+      AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL: 20
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: 'true'
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+      AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+      AIRFLOW__LOGGING__LOGGING_LEVEL: "INFO"
+      _PIP_ADDITIONAL_REQUIREMENTS: "apache-airflow-providers-microsoft-mssql==3.6.0"
+    networks:
+      monitoramento_sptrans_rede:
+        ipv4_address: 172.20.0.8
+
+networks:
+  monitoramento_sptrans_rede:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: "172.20.0.0/16"
+
+volumes:
+  grafana_data:
+    driver: local
+  postgres-db-volume:
+  sqlserver-data:

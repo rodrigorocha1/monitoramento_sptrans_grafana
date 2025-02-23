@@ -1,0 +1,47 @@
+services:
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: mssql_server_airflow
+    ports:
+      - "1433:1433"
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "YourStrongP@ssw0rd!"
+      MSSQL_TCP_CERT: "TrustServerCertificate"
+      TZ: "America/Sao_Paulo"
+    volumes:
+      - /home/rodrigo/Documentos/projetos/monitoramento_sptrans_grafana/dados_sql_server:/var/opt/mssql
+    networks:
+      monitoramento_network:
+        ipv4_address: 192.168.100.10
+    restart: always
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    networks:
+      monitoramento_network:
+        ipv4_address: 192.168.100.11
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - TZ=America/Sao_Paulo
+      - GF_INSTALL_PLUGINS=dalvany-image-panel
+    volumes:
+      - ./grafana_data:/var/lib/grafana
+
+volumes:
+  grafana_data:
+    driver: local
+  sqlserver-data:
+
+networks:
+  monitoramento_network:
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.100.0/24

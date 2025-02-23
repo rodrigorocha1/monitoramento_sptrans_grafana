@@ -1,0 +1,13 @@
+/.env
+/.vscode
+/dados_sql_server
+/grafana_data
+/influxdb2-config
+/influxdb_data
+/logs
+/particao_arquivo.py
+/plugins
+/rep_pentaho
+teste.py
+__pycache__
+/venv
