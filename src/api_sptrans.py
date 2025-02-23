@@ -1,7 +1,7 @@
 import requests
 import os
 from dotenv import load_dotenv
-from typing import List, Optional
+from typing import Any, Generator, List, Optional
 
 load_dotenv()
 
@@ -24,11 +24,12 @@ class APISPTRANS:
         return cookie
 
     def buscar_linhas(self) -> List:
-        """busca todas as linhas
+        """Método que busca todas as linhas
 
         Returns:
-            Dict: Retorna a Linha
+            List: retorna a lista de operações
         """
+
         cookie = self.__realizar_login()
         URL_COMPLETA = f'{self.__URL}Posicao'
         headers = {
