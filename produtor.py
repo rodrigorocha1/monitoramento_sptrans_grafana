@@ -66,7 +66,7 @@ class Produtor:
                         topico='linhas_onibus',
                         dados=dado,
                         codigo_linha='linha_1',
-                        particao=1
+                        particao=0
                     )
 
                     print('Inserido')
