@@ -58,22 +58,17 @@ class Produtor:
         while True:
             dados_linha = self.__req_api_sptrans.buscar_linhas()
             print('Obtive dados')
-            for dado in dados_linha:
-                try:
-                    print('Tentando inserir dados')
-                    print(dado)
-                    self.__enviar_dados(
-                        topico='linhas_onibus',
-                        dados=dado,
-                        codigo_linha='linha_1',
-                        particao=0
-                    )
+            print('Tentando inserir dados')
+            self.__enviar_dados(
+                topico='linhas_onibus',
+                dados=dados_linha,
+                codigo_linha='linha_1',
+                particao=0
+            )
 
-                    print('Inserido')
-                except Exception as e:
-                    print(e)
-                    break
-            sleep(5)
+            print('Inserido')
+
+            sleep(15)
 
 
 if __name__ == '__main__':
