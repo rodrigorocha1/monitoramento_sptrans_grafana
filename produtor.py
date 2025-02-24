@@ -10,7 +10,7 @@ from time import sleep
 class Produtor:
 
     def __init__(self):
-        for i in range(11):
+        for i in range(100):
             try:
 
                 self.__URL_KAFKA = 'kafka:9092'
@@ -24,9 +24,12 @@ class Produtor:
                     bootstrap_servers=self.__URL_KAFKA
                 )
                 self.__req_api_sptrans = APISPTRANS()
+                break
 
-            except KafkaError:
-                sleep(5)
+            except KafkaError as e:
+                print(f'Espera {e}')
+            print('Reconectando KAFKA')
+            sleep(2)
         else:
             raise RuntimeError('Falha ao conectar ao kafka')
 
@@ -54,11 +57,25 @@ class Produtor:
         self.__criar_topico(topico='linhas_onibus', numero_particoes=1)
         while True:
             dados_linha = self.__req_api_sptrans.buscar_linhas()
+            print('Obtive dados')
             for dado in dados_linha:
-                self.__enviar_dados(
-                    topico='linhas_onibus',
-                    dado=dado,
-                    codigo_linha='1',
-                    particao=1
-                )
+                try:
+                    print('Tentando inserir dados')
+                    print(dado)
+                    self.__enviar_dados(
+                        topico='linhas_onibus',
+                        dados=dado,
+                        codigo_linha='linha_1',
+                        particao=1
+                    )
+
+                    print('Inserido')
+                except Exception as e:
+                    print(e)
+                    break
             sleep(5)
+
+
+if __name__ == '__main__':
+    p = Produtor()
+    p.rodar_produtor()

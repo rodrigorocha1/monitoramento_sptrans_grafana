@@ -1,4 +1,162 @@
+
 services:
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    container_name: zookeeper
+    ports:
+      - 2181:2181
+    networks:
+      rede_sptrans:
+        ipv4_address: 172.20.0.2
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+      - TZ=America/Sao_Paulo
+    
+    healthcheck:
+      test: [ "CMD", "echo", "ruok", "|", "nc", "localhost", "2181" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  
+
+
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: kafka
+    restart: on-failure
+    ports:
+      - 9092:9092
+    networks:
+      rede_sptrans:
+        ipv4_address: 172.20.0.3
+    environment:
+      - KAFKA_CFG_BROKER_ID=1
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://0.0.0.0:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_NUM_PARTITIONS=3
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - TZ=America/Sao_Paulo
+      - KAFKA_HOST=kafka:9092
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"
+    restart: always
+    networks:
+      rede_sptrans:
+        ipv4_address: 172.20.0.4
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=kafka_grafana
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
+      - TZ=America/Sao_Paulo
+    depends_on:
+      kafka:
+        condition: service_healthy
+      zookeeper:
+        condition: service_healthy
+    
+
+    
+
+  influxdb:
+    image: influxdb:2
+    container_name: influxdb
+    ports:
+      - "8086:8086"
+    volumes:
+      - ./influxdb_data:/var/lib/influxdb2
+      - ./influxdb2-config:/etc/influxdb2
+    networks:
+      rede_sptrans:
+        ipv4_address: 172.20.0.5
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=rodrigo
+      - DOCKER_INFLUXDB_INIT_PASSWORD=123456789
+      - DOCKER_INFLUXDB_INIT_ORG=rodr
+      - DOCKER_INFLUXDB_INIT_BUCKET=rodr
+      - TZ=America/Sao_Paulo
+    depends_on:
+      kafka:
+        condition: service_healthy
+      zookeeper:
+        condition: service_healthy
+
+    
+
+  producer:
+    container_name: produtor
+    build:
+      context: .
+      dockerfile: Dockerfile.produtor
+    networks:
+        rede_sptrans:
+          ipv4_address: 172.20.0.6
+    environment:
+      - TZ=America/Sao_Paulo
+    depends_on:
+      kafka:
+        condition: service_healthy
+      zookeeper:
+        condition: service_healthy
+      influxdb:
+        condition: service_started
+    
+
+  # consumer:
+  #   container_name: consumidor
+  #   networks:
+  #     rede_sptrans:
+  #       ipv4_address: 172.20.0.7
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.consumidor
+  #   environment:
+  #     - TZ=America/Sao_Paulo
+  #   depends_on:
+  #     kafka:
+  #       condition: service_healthy
+  #     zookeeper:
+  #       condition: service_healthy
+  #     influxdb:
+  #       condition: service_started
+    
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    networks:
+      rede_sptrans:
+        ipv4_address: 172.20.0.8
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - TZ=America/Sao_Paulo
+      - GF_INSTALL_PLUGINS=dalvany-image-panel
+    volumes:
+      - ./grafana_data:/var/lib/grafana
+    depends_on:
+      kafka-ui:
+        condition: service_started
+      zookeeper:
+        condition: service_healthy
+
 
   mssql:
     image: mcr.microsoft.com/mssql/server:2019-latest
@@ -13,35 +171,24 @@ services:
     volumes:
       - /home/rodrigo/Documentos/projetos/monitoramento_sptrans_grafana/dados_sql_server:/var/opt/mssql
     networks:
-      monitoramento_network:
-        ipv4_address: 192.168.100.10
+      rede_sptrans:
+        ipv4_address: 172.20.0.9
     restart: always
 
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    restart: unless-stopped
-    networks:
-      monitoramento_network:
-        ipv4_address: 192.168.100.11
-    ports:
-      - "3001:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - TZ=America/Sao_Paulo
-      - GF_INSTALL_PLUGINS=dalvany-image-panel
-    volumes:
-      - ./grafana_data:/var/lib/grafana
-
-volumes:
-  grafana_data:
-    driver: local
-  sqlserver-data:
+    
 
 networks:
-  monitoramento_network:
+  rede_sptrans:
+    driver: bridge
     ipam:
-      driver: default
       config:
-        - subnet: 192.168.100.0/24
+        - subnet: "172.20.0.0/16"
+
+
+
+volumes:
+  sqlserver-data:
+  grafana_data:
+    driver: local
+  influxdb_data:
+    driver: local
