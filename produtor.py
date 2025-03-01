@@ -68,7 +68,7 @@ class Produtor:
 
             print('Inserido')
 
-            sleep(15)
+            sleep(60)
 
 
 if __name__ == '__main__':

@@ -116,23 +116,23 @@ services:
         condition: service_started
     
 
-  # consumer:
-  #   container_name: consumidor
-  #   networks:
-  #     rede_sptrans:
-  #       ipv4_address: 172.20.0.7
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.consumidor
-  #   environment:
-  #     - TZ=America/Sao_Paulo
-  #   depends_on:
-  #     kafka:
-  #       condition: service_healthy
-  #     zookeeper:
-  #       condition: service_healthy
-  #     influxdb:
-  #       condition: service_started
+  consumer:
+    container_name: consumidor
+    networks:
+      rede_sptrans:
+        ipv4_address: 172.20.0.7
+    build:
+      context: .
+      dockerfile: Dockerfile.consumidor
+    environment:
+      - TZ=America/Sao_Paulo
+    depends_on:
+      kafka:
+        condition: service_healthy
+      zookeeper:
+        condition: service_healthy
+      influxdb:
+        condition: service_started
     
 
   grafana:
