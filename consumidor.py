@@ -39,7 +39,7 @@ class Consumidor:
                 time.sleep(30)
         else:
             raise RuntimeError(
-                "Falha ao conectar ao Kafka após várias tentativas.")
+                "Falha ao conectar ao Kafka consomidor após várias tentativas.")
 
     def rodar_consumidor(self):
         for mensagem in self.__consumidor:

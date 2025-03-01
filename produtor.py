@@ -28,8 +28,8 @@ class Produtor:
 
             except KafkaError as e:
                 print(f'Espera {e}')
-            print('Reconectando KAFKA')
-            sleep(2)
+                print('Reconectando KAFKA')
+                sleep(30)
         else:
             raise RuntimeError('Falha ao conectar ao kafka')
 
