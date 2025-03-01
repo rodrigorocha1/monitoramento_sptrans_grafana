@@ -11,9 +11,9 @@ load_dotenv()
 
 class Consumidor:
     def __init__(self):
-        self.__topico = ''
-        self.__bootstrap_servers = ''
-        self.__group_id
+        self.__topico = 'linhas_onibus'
+        self.__bootstrap_servers = 'kafka:9092'
+        self.__group_id = 'linhas_sptrans_grupo'
         self.__INFLUXDB_URL = os.environ['INFLUXDB_URL']
         self.__INFLUXDB_TOKEN = os.environ['INFLUXDB_TOKEN']
         self.__INFLUXDB_ORG = os.environ['INFLUXDB_ORG']
@@ -24,7 +24,7 @@ class Consumidor:
             org=self.__INFLUXDB_ORG
         )
 
-        for i in range(30):
+        for i in range(100):
             try:
                 self.__consumidor = KafkaConsumer(
                     self.__topico,

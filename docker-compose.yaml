@@ -7,7 +7,7 @@ services:
       - 2181:2181
     networks:
       rede_sptrans:
-        ipv4_address: 172.20.0.2
+        ipv4_address: 172.30.0.2
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
       - TZ=America/Sao_Paulo
@@ -29,7 +29,7 @@ services:
       - 9092:9092
     networks:
       rede_sptrans:
-        ipv4_address: 172.20.0.3
+        ipv4_address: 172.30.0.3
     environment:
       - KAFKA_CFG_BROKER_ID=1
       - KAFKA_CFG_LISTENERS=PLAINTEXT://0.0.0.0:9092
@@ -56,7 +56,7 @@ services:
     restart: always
     networks:
       rede_sptrans:
-        ipv4_address: 172.20.0.4
+        ipv4_address: 172.30.0.4
     environment:
       - KAFKA_CLUSTERS_0_NAME=kafka_grafana
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
@@ -81,7 +81,7 @@ services:
       - ./influxdb2-config:/etc/influxdb2
     networks:
       rede_sptrans:
-        ipv4_address: 172.20.0.5
+        ipv4_address: 172.30.0.5
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=rodrigo
@@ -104,7 +104,7 @@ services:
       dockerfile: Dockerfile.produtor
     networks:
         rede_sptrans:
-          ipv4_address: 172.20.0.6
+          ipv4_address: 172.30.0.6
     environment:
       - TZ=America/Sao_Paulo
     depends_on:
@@ -120,7 +120,7 @@ services:
     container_name: consumidor
     networks:
       rede_sptrans:
-        ipv4_address: 172.20.0.7
+        ipv4_address: 172.30.0.7
     build:
       context: .
       dockerfile: Dockerfile.consumidor
@@ -141,7 +141,7 @@ services:
     restart: unless-stopped
     networks:
       rede_sptrans:
-        ipv4_address: 172.20.0.8
+        ipv4_address: 172.30.0.8
     ports:
       - "3000:3000"
     environment:
@@ -172,7 +172,7 @@ services:
       - /home/rodrigo/Documentos/projetos/monitoramento_sptrans_grafana/dados_sql_server:/var/opt/mssql
     networks:
       rede_sptrans:
-        ipv4_address: 172.20.0.9
+        ipv4_address: 172.30.0.9
     restart: always
 
     
@@ -182,7 +182,7 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: "172.20.0.0/16"
+        - subnet: "172.30.0.0/16"
 
 
 
